@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Random Pixel Canvas</title>
+    <style>
+        /* CSS to make body 100vw and 100vh with no margin */
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        canvas {
+            image-rendering: pixelated;
+            /* Makes the canvas pixelized */
+        }
+    </style>
+</head>
+
+<body>
+    <script>
+        const m = 2 ** 32,
+            a = 1664525,
+            c = 1013904223;
+        let z = 0xDEADBEAF;
+        const rand = function () {
+            z = (a * z + c) % m;
+            return z / m;
+        };
+
+        // JavaScript to create a canvas with size of body * DPR
+        document.addEventListener('DOMContentLoaded', function () {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d', { alpha: false });
+            const dpr = window.devicePixelRatio || 1;
+
+            // Adjust canvas size
+            canvas.width = 150;
+            canvas.height = 150;
+            const m = Math.min(window.innerWidth, window.innerHeight)
+            canvas.style.width = m + 'px';
+            canvas.style.height = m + 'px';
+
+            // Append canvas to body
+            document.body.appendChild(canvas);
+
+            // Initialize canvas with random black or white pixels
+            for (let y = 0; y < canvas.height; y++) {
+                for (let x = 0; x < canvas.width; x++) {
+                    ctx.fillStyle = rand() > 0.5 ? '#000000' : '#FFFFFF';
+                    ctx.fillRect(x, y, 1, 1);
+                }
+            }
+
+            // Line properties
+            let x1 = 50
+            let y1 = 50
+            let x2 = 100
+            let y2 = 50
+            let velocityX = 0.5
+            let velocityY = 0.7
+            let angularVelocity = 0.1
+            let angle = 0;
+
+            ctx.globalCompositeOperation = 'difference'
+            ctx.strokeStyle = 'black'
+            ctx.lineWidth = 1
+
+            function rasterizeLine(x0, y0, x1, y1) {
+                let dx = Math.abs(x1 - x0);
+                let dy = Math.abs(y1 - y0);
+                let steps = Math.max(dx, dy);
+                let xIncrement = dx / steps;
+                let yIncrement = dy / steps;
+
+                let x = x0;
+                let y = y0;
+                for (let i = 0; i <= steps; i++) {
+                    // Place pixel
+                    ctx.fillRect(Math.round(x), Math.round(y), 1, 1); // Draw a 1x1 pixel
+                    x += (x1 > x0) ? xIncrement : -xIncrement; // Move x
+                    y += (y1 > y0) ? yIncrement : -yIncrement; // Move y
+                }
+            }
+
+            let isPaused = false
+            let shouldReset = false
+
+            function drawLine() {
+                // Calculate new end point based on current angle
+                let dx = x2 - x1;
+                let dy = y2 - y1;
+                let distance = Math.sqrt(dx * dx + dy * dy);
+                let newEndX = x1 + distance * Math.cos(angle);
+                let newEndY = y1 + distance * Math.sin(angle);
+
+                rasterizeLine(x1, y1, newEndX, newEndY)
+
+                // Update positions
+                x1 += velocityX;
+                y1 += velocityY;
+                x2 = newEndX + velocityX;
+                y2 = newEndY + velocityY;
+                angle += angularVelocity;
+
+                // Boundary checking and velocity reversal
+                if (x1 < 0 || x1 > canvas.width) {
+                    x1 = Math.min(Math.max(0, x1), canvas.width - 1)
+                    velocityX *= -1;
+                    // angularVelocity *= -1; // Reverse angular velocity for a dynamic effect
+                }
+                if (y1 < 0 || y1 > canvas.height) {
+                    y1 = Math.min(Math.max(0, y1), canvas.height - 1)
+                    velocityY *= -1;
+                    // angularVelocity *= -1; // Reverse angular velocity for a dynamic effect
+                }
+
+                if (!isPaused) {
+                    setTimeout(drawLine, 50); // Repeat
+                } else {
+                    shouldReset = true
+                }
+            }
+
+            // Toggle pause on spacebar press
+            document.addEventListener('keydown', function (event) {
+                if (event.code === 'Space') {
+                    isPaused = !isPaused;
+                    if (!isPaused && shouldReset) {
+                        shouldReset = false;
+                        drawLine()
+                    }
+                }
+            });
+
+            drawLine();
+        });
+    </script>
+</body>
+
+</html>
