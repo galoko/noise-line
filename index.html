@@ -131,15 +131,23 @@
                 }
             }
 
+            const pauseSwitch = () => {
+                isPaused = !isPaused;
+                if (!isPaused && shouldReset) {
+                    shouldReset = false;
+                    drawLine()
+                }
+            }
+
             // Toggle pause on spacebar press
             document.addEventListener('keydown', function (event) {
                 if (event.code === 'Space') {
-                    isPaused = !isPaused;
-                    if (!isPaused && shouldReset) {
-                        shouldReset = false;
-                        drawLine()
-                    }
+                    pauseSwitch()
                 }
+            });
+
+            document.addEventListener('touchstart', function (event) {
+                pauseSwitch()
             });
 
             drawLine();
